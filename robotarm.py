@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-from math import cos, sin, pi, sqrt, atan
+from math import cos, sin, pi, sqrt, atan, ceil
 import numpy as np
 
 
@@ -94,9 +94,20 @@ def display_points(s, points):
 
 
 def display_transformation(points):
+
+    def custom_round(integer, n=2):
+        power = pow(10, n)
+        return ceil(int(integer * power)) / power
+
+    l = [ORIGIN.transform()]
     for point in points:
-        x_i, y_i = point.transform()
-        print(f'Transforming point {point.number}: r = {round(point.len, 2)}, theta = {round(point.ang, 2)} to x = {round(x_i, 2)}, y = {round(y_i, 2)}')
+        x, y = point.polar_to_cart()
+        x_1, y_1 = l[-1]
+        x_i, y_i = custom_round(x_1) + custom_round(x, 2), custom_round(y_1) - custom_round(y, 2)
+        l.append((x_i, y_i))
+
+        print(
+            f'Transforming point {point.number}: r = {custom_round(point.len, 2)}, theta = {custom_round(point.ang, 2)} to x = {x_i}, y = {y_i}')
 
 
 def cart_to_polar(x, y):
@@ -162,7 +173,7 @@ def test(w, h):
                 r, theta = cart_to_polar(x - w // 2, h // 2 - y)
                 p = Point(r, theta)
                 display_points(screen, [p])
-                print(computeCost(extract_features(points), p))
+                # print(computeCost(extract_features(points), p))
 
         pygame.display.update()
         clock.tick(60)
