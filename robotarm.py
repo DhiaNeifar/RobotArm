@@ -1,8 +1,9 @@
 import pygame
 import sys
 import random
-from math import cos, sin, pi, sqrt, atan, ceil
+from math import cos, sin, pi, sqrt, atan
 import numpy as np
+import time
 
 
 COLORS = {
@@ -18,7 +19,7 @@ class Point:
 
     POINT_NUMBER = 0
 
-    def __init__(self, r, angle):
+    def __init__(self, r, angle, color):
         if r < 0:
             print('r should be always positive!')
             print(f'Rectifying, r = {r} ==> r = {abs(r)}, angle = {angle} ==> angle = {angle + pi}')
@@ -28,6 +29,8 @@ class Point:
         self.number = Point.POINT_NUMBER
         self.len = r
         self.ang = angle
+        self.color = color
+
         Point.POINT_NUMBER += 1
 
     def polar_to_cart(self):
@@ -39,7 +42,7 @@ class Point:
         return transformed_x, transformed_y
 
 
-ORIGIN = Point(0, 0)
+ORIGIN = Point(0, 0, COLORS['WHITE'])
 
 
 def main():
@@ -56,58 +59,56 @@ def launch(w, h):
     return s
 
 
-def display_initials(s, W, H, n):
+def display_initials(s, W, H):
     s.fill('White')
 
     pygame.draw.line(s, COLORS['BLACK'], (W // 2, 0), (W // 2, H), width=5)
     pygame.draw.line(s, COLORS['BLACK'], (0, H // 2), (W, H // 2), width=5)
     pygame.display.update()
 
-    points = initialize_points(n)
-    display_points(s, points)
     pygame.display.update()
-    return points
 
 
 def initialize_points(N):
     while N > len(COLORS) - 2:
+
         N = int(input(f'N value needs to be less than {len(COLORS)}: '))
 
+    pts = []
+    NON_USED_COLORS = list(COLORS.keys())[2:]
+    for _ in range(N):
+        index = random.randint(0, len(NON_USED_COLORS) - 1)
+        pts.append(Point(random.randint(100, 200), random.uniform(0, 2 * pi), COLORS[NON_USED_COLORS[index]]))
+        NON_USED_COLORS.pop(index)
     # return [Point(247, 4.14)]
-    return [Point(random.randint(100, 300), random.uniform(0, 2 * pi)) for _ in range(N)]
+    return pts
 
 
 def display_points(s, points):
     l = [ORIGIN.transform()]
-    NON_USED_COLORS = list(COLORS.keys())[2:]
+
     for point in points:
         x, y = point.polar_to_cart()
         x_1, y_1 = l[-1]
         l.append((x_1 + round(x, 2), y_1 - round(y, 2)))
-        index = random.randint(0, len(NON_USED_COLORS) - 1)
-        pygame.draw.line(s, COLORS[NON_USED_COLORS[index]], l[-1], l[-2], width=3)
-        NON_USED_COLORS.pop(index)
 
-    print(l)
+        pygame.draw.line(s, point.color, l[-1], l[-2], width=3)
+
     display_transformation(points)
     pygame.display.update()
 
 
 def display_transformation(points):
 
-    def custom_round(integer, n=2):
-        power = pow(10, n)
-        return ceil(int(integer * power)) / power
-
     l = [ORIGIN.transform()]
     for point in points:
         x, y = point.polar_to_cart()
         x_1, y_1 = l[-1]
-        x_i, y_i = custom_round(x_1) + custom_round(x, 2), custom_round(y_1) - custom_round(y, 2)
+        x_i, y_i = x_1 + x, y_1 - y
         l.append((x_i, y_i))
 
         print(
-            f'Transforming point {point.number}: r = {custom_round(point.len, 2)}, theta = {custom_round(point.ang, 2)} to x = {x_i}, y = {y_i}')
+            f'Transforming point {point.number}: r = {round(point.len, 2)}, theta = {round(point.ang, 2)} to x = {round(x_i, 2)}, y = {round(y_i, 2)}')
 
 
 def cart_to_polar(x, y):
@@ -124,44 +125,52 @@ def cart_to_polar(x, y):
         return sqrt(x * x + y * y), atan(y / x) + pi
 
 
-def extract_features(points):
-    lengths, angles = [], []
-    for point in points:
-        lengths.append(point.len)
-        angles.append(point.ang)
+def gradientDescent(l_r, _steps, points, target, _s, _w, _h, epsilon=0.0001):
 
-    return np.expand_dims(np.array(lengths), 1), np.expand_dims(np.array(angles), 1)
+    def update_thetas(pts, thetas):
+        for index, point in enumerate(pts):
+            point.ang = thetas[index, 0]
 
+    def extract_features(pts):
+        lens, thetas = [], []
+        for point in pts:
+            lens.append(point.len)
+            thetas.append(point.ang)
 
-def computeCost(features, target):
-    r_features, theta_features = features
-    r_target, theta_target = target.len, target.ang
-    print(r_features)
-    print(theta_features)
-    print(r_target)
-    print(theta_target)
+        return np.expand_dims(np.array(lens), 1), np.expand_dims(np.array(thetas), 1)
 
-    x = np.multiply(r_features, np.cos(theta_features))
-    y = np.multiply(r_features, np.sin(theta_features))
+    def computeCost(features, t):
+        r_features, theta_features = features
+        r_target, theta_target = t.len, t.ang
 
-    COS = np.sum(x) - r_target * cos(theta_target)
-    SIN = np.sum(y) - r_target * sin(theta_target)
-    J = 1 / 2 * (COS ** 2 + SIN ** 2)
+        x = np.multiply(r_features, np.cos(theta_features))
+        y = np.multiply(r_features, np.sin(theta_features))
 
-    grad = SIN * x - COS * y
+        COS = np.sum(x) - r_target * cos(theta_target)
+        SIN = np.sum(y) - r_target * sin(theta_target)
 
-    return J, grad
+        return 1 / 2 * (COS ** 2 + SIN ** 2), SIN * x - COS * y
 
-
-def gradientDescent():
-    pass
+    for step in range(_steps):
+        lengths, angles = extract_features(points)
+        J, G = computeCost((lengths, angles), target)
+        print(f'Step {step} | J = {round(J, 2)}')
+        if J < epsilon:
+            break
+        angles = np.subtract(angles, - l_r * G)
+        update_thetas(points, angles)
+        display_initials(_s, _w, _h)
+        display_points(_s, points)
 
 
 def test(w, h):
     screen = launch(w, h)
     n = 3
-    points = display_initials(screen, w, h, n)
+    display_initials(screen, w, h)
+    points = initialize_points(n)
+    display_points(screen, points)
     clock = pygame.time.Clock()
+    lr, steps = 0.0000001, 400
     while 1:
 
         for event in pygame.event.get():
@@ -171,9 +180,9 @@ def test(w, h):
             if event.type == pygame.MOUSEBUTTONUP:
                 x, y = pygame.mouse.get_pos()
                 r, theta = cart_to_polar(x - w // 2, h // 2 - y)
-                p = Point(r, theta)
-                display_points(screen, [p])
-                # print(computeCost(extract_features(points), p))
+                p = Point(r, theta, COLORS['BLACK'])
+                # display_points(screen, [p])
+                gradientDescent(lr, steps, points, p, screen, w, h)
 
         pygame.display.update()
         clock.tick(60)
