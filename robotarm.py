@@ -84,7 +84,7 @@ def initialize_points(N):
     return pts
 
 
-def display_points(s, points):
+def display_points(s, points, display=False):
     l = [ORIGIN.transform()]
 
     for point in points:
@@ -94,7 +94,8 @@ def display_points(s, points):
 
         pygame.draw.line(s, point.color, l[-1], l[-2], width=3)
 
-    display_transformation(points)
+    if display:
+        display_transformation(points)
     pygame.display.update()
 
 
@@ -126,7 +127,6 @@ def cart_to_polar(x, y):
 
 
 def gradientDescent(l_r, _steps, points, target, _s, _w, _h, epsilon=0.0001):
-
     def update_thetas(pts, thetas):
         for index, point in enumerate(pts):
             point.ang = thetas[index, 0]
@@ -149,7 +149,7 @@ def gradientDescent(l_r, _steps, points, target, _s, _w, _h, epsilon=0.0001):
         COS = np.sum(x) - r_target * cos(theta_target)
         SIN = np.sum(y) - r_target * sin(theta_target)
 
-        return 1 / 2 * (COS ** 2 + SIN ** 2), SIN * x - COS * y
+        return 1 / 2 * (COS ** 2 + SIN ** 2), COS * y - SIN * x
 
     for step in range(_steps):
         lengths, angles = extract_features(points)
@@ -165,12 +165,12 @@ def gradientDescent(l_r, _steps, points, target, _s, _w, _h, epsilon=0.0001):
 
 def test(w, h):
     screen = launch(w, h)
-    n = 3
+    n = 2
     display_initials(screen, w, h)
     points = initialize_points(n)
     display_points(screen, points)
     clock = pygame.time.Clock()
-    lr, steps = 0.0000001, 400
+    lr, steps = 0.00001, 4000
     while 1:
 
         for event in pygame.event.get():
@@ -181,7 +181,6 @@ def test(w, h):
                 x, y = pygame.mouse.get_pos()
                 r, theta = cart_to_polar(x - w // 2, h // 2 - y)
                 p = Point(r, theta, COLORS['BLACK'])
-                # display_points(screen, [p])
                 gradientDescent(lr, steps, points, p, screen, w, h)
 
         pygame.display.update()
