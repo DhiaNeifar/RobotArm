@@ -3,7 +3,6 @@ import sys
 import random
 from math import cos, sin, pi, sqrt, atan
 import numpy as np
-import time
 
 
 COLORS = {
@@ -12,6 +11,7 @@ COLORS = {
     "RED":      (255, 0, 0),
     "GREEN":    (0, 255, 0),
     "BLUE":     (0, 0, 255),
+    'YELLOW':     (255, 255, 0)
 }
 
 
@@ -155,7 +155,7 @@ def gradientDescent(l_r, _steps, points, target, _s, _w, _h, epsilon=0.0001):
         lengths, angles = extract_features(points)
         J, G = computeCost((lengths, angles), target)
         print(f'Step {step} | J = {round(J, 2)}')
-        if J < epsilon:
+        if J < epsilon or np.all((G == 0)):
             break
         angles = np.subtract(angles, - l_r * G)
         update_thetas(points, angles)
@@ -165,12 +165,12 @@ def gradientDescent(l_r, _steps, points, target, _s, _w, _h, epsilon=0.0001):
 
 def test(w, h):
     screen = launch(w, h)
-    n = 2
+    n = 3
     display_initials(screen, w, h)
     points = initialize_points(n)
     display_points(screen, points)
     clock = pygame.time.Clock()
-    lr, steps = 0.00001, 4000
+    lr, steps = 0.000005, 400
     while 1:
 
         for event in pygame.event.get():
