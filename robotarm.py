@@ -72,7 +72,7 @@ def display_initials(s, W, H):
 def initialize_points(N):
     while N > len(COLORS) - 2:
 
-        N = int(input(f'N value needs to be less than {len(COLORS)}: '))
+        N = int(input(f'N value needs to be equal or less than {len(COLORS) - 2}: '))
 
     pts = []
     NON_USED_COLORS = list(COLORS.keys())[2:]
@@ -165,7 +165,7 @@ def gradientDescent(l_r, _steps, points, target, _s, _w, _h, epsilon=0.0001):
 
 def test(w, h):
     screen = launch(w, h)
-    n = 3
+    n = 5
     display_initials(screen, w, h)
     points = initialize_points(n)
     display_points(screen, points)
